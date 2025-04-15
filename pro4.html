@@ -24,6 +24,9 @@
       cursor: pointer;
       padding: 5px;
       border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .file-item:hover {
       background: #ddd;
@@ -50,6 +53,10 @@
     .controls input[type="text"] {
       margin-right: 5px;
     }
+    .file-buttons button {
+      margin-left: 3px;
+      font-size: 10px;
+    }
   </style>
 </head>
 <body>
@@ -59,6 +66,7 @@
       <button onclick="createFile()">إنشاء ملف</button>
       <button onclick="saveFile()">حفظ</button>
       <input type="file" id="upload" multiple onchange="handleUpload(event)" />
+      <button onclick="shareFile()">مشاركة</button>
     </div>
     <textarea id="fileContent" placeholder="محتوى الملف..."></textarea>
   </div>
@@ -81,12 +89,56 @@
           const name = key.slice(5);
           const div = document.createElement('div');
           div.className = 'file-item';
-          div.textContent = name;
-          div.onclick = () => {
+
+          const span = document.createElement('span');
+          span.textContent = name;
+          span.style.flex = '1';
+          span.onclick = () => {
             currentFile = name;
             filenameInput.value = name;
             fileContent.value = localStorage.getItem('file_' + name);
           };
+
+          const buttons = document.createElement('span');
+          buttons.className = 'file-buttons';
+
+          const delBtn = document.createElement('button');
+          delBtn.textContent = 'حذف';
+          delBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (confirm('هل أنت متأكد من حذف الملف؟')) {
+              localStorage.removeItem('file_' + name);
+              if (currentFile === name) {
+                currentFile = null;
+                filenameInput.value = '';
+                fileContent.value = '';
+              }
+              loadFiles();
+            }
+          };
+
+          const renameBtn = document.createElement('button');
+          renameBtn.textContent = 'إعادة تسمية';
+          renameBtn.onclick = (e) => {
+            e.stopPropagation();
+            const newName = prompt('اسم جديد:', name);
+            if (newName && newName !== name) {
+              const content = localStorage.getItem('file_' + name);
+              localStorage.setItem('file_' + newName, content);
+              localStorage.removeItem('file_' + name);
+              if (currentFile === name) {
+                currentFile = newName;
+                filenameInput.value = newName;
+              }
+              loadFiles();
+            }
+          };
+
+          buttons.appendChild(renameBtn);
+          buttons.appendChild(delBtn);
+          div.appendChild(span);
+          div.appendChild(buttons);
+
           fileListDiv.appendChild(div);
         }
       }
@@ -121,6 +173,22 @@
         };
         reader.readAsText(file);
       });
+    }
+
+    function shareFile() {
+      const name = filenameInput.value.trim();
+      const content = fileContent.value;
+      if (!name || !content) {
+        alert('يرجى اختيار ملف يحتوي على محتوى');
+        return;
+      }
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = name;
+      link.click();
+      URL.revokeObjectURL(url);
     }
 
     loadFiles();

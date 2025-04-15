@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spck-like Code Editor</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: sans-serif;
+    }
+    .toolbar {
+      background: #2c3e50;
+      color: white;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .tabs {
+      display: flex;
+      background: #34495e;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      color: white;
+    }
+    .tab.active {
+      background: #2c3e50;
+    }
+    #editor {
+      flex: 1;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+</head>
+<body>
+  <div class="toolbar">
+    <div>Code Editor</div>
+    <button onclick="runCode()">Run</button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('html')">HTML</div>
+    <div class="tab" onclick="switchTab('css')">CSS</div>
+    <div class="tab" onclick="switchTab('js')">JavaScript</div>
+  </div>
+  <div id="editor"></div>
+
+  <script>
+    let htmlCode = '<h1>Hello World</h1>';
+    let cssCode = 'body { font-family: Arial; }';
+    let jsCode = 'console.log("Hello from JS");';
+    let editor, currentTab = 'html';
+
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    require(['vs/editor/editor.main'], function () {
+      editor = monaco.editor.create(document.getElementById('editor'), {
+        value: htmlCode,
+        language: 'html',
+        theme: 'vs-dark',
+        automaticLayout: true
+      });
+    });
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`.tab:nth-child(${tab === 'html' ? 1 : tab === 'css' ? 2 : 3})`).classList.add('active');
+      if (!editor) return;
+
+      // Save previous tab content
+      if (currentTab === 'html') htmlCode = editor.getValue();
+      else if (currentTab === 'css') cssCode = editor.getValue();
+      else jsCode = editor.getValue();
+
+      currentTab = tab;
+      const code = tab === 'html' ? htmlCode : tab === 'css' ? cssCode : jsCode;
+      const lang = tab === 'html' ? 'html' : tab === 'css' ? 'css' : 'javascript';
+      monaco.editor.setModelLanguage(editor.getModel(), lang);
+      editor.setValue(code);
+    }
+
+    function runCode() {
+      if (!editor) return;
+      if (currentTab === 'html') htmlCode = editor.getValue();
+      else if (currentTab === 'css') cssCode = editor.getValue();
+      else jsCode = editor.getValue();
+
+      const output = `<!DOCTYPE html><html><head><style>${cssCode}</style></head><body>${htmlCode}<script>${jsCode}<\/script></body></html>`;
+      const newWindow = window.open();
+      newWindow.document.open();
+      newWindow.document.write(output);
+      newWindow.document.close();
+    }
+  </script>
+</body>
+</html>

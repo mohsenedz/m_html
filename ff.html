@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مدير الملفات</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 2rem;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    .controls {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .controls input[type="file"] {
+      margin-bottom: 0.5rem;
+    }
+    .controls button {
+      background-color: #2980b9;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: 0.5rem;
+    }
+    .controls button:hover {
+      background-color: #1f6391;
+    }
+    .file-list {
+      max-width: 800px;
+      margin: auto;
+    }
+    .file-item {
+      background: white;
+      border: 1px solid #ddd;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .file-item a {
+      text-decoration: none;
+      color: #2980b9;
+      font-weight: bold;
+    }
+    .file-actions button, .file-actions a {
+      margin-left: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .download-btn { background-color: #27ae60; color: white; text-decoration: none; }
+    .edit-btn { background-color: #f39c12; color: white; }
+    .delete-btn { background-color: #e74c3c; color: white; }
+  </style>
+</head>
+<body>
+  <h1>مدير الملفات</h1>
+  <div class="controls">
+    <input type="file" id="fileInput" multiple />
+    <button onclick="createFile()">إنشاء ملف</button>
+  </div>
+  <div class="file-list" id="fileList"></div>
+
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const fileList = document.getElementById("fileList");
+    const uploadedFiles = new Map();
+
+    fileInput.addEventListener("change", (event) => {
+      const files = Array.from(event.target.files);
+      files.forEach(file => {
+        const fileURL = URL.createObjectURL(file);
+        uploadedFiles.set(file.name, { file, url: fileURL });
+        displayFile(file.name, fileURL);
+      });
+    });
+
+    function createFile() {
+      const fileName = prompt("اكتب اسم الملف الجديد:");
+      if (!fileName) return;
+      const blob = new Blob([""], { type: "text/plain" });
+      const fileURL = URL.createObjectURL(blob);
+      uploadedFiles.set(fileName, { file: blob, url: fileURL });
+      displayFile(fileName, fileURL);
+    }
+
+    function displayFile(fileName, fileURL) {
+      const fileItem = document.createElement("div");
+      fileItem.className = "file-item";
+      fileItem.dataset.name = fileName;
+
+      const link = document.createElement("a");
+      link.href = fileURL;
+      link.textContent = fileName;
+      link.target = "_blank";
+
+      const actions = document.createElement("span");
+      actions.className = "file-actions";
+
+      const downloadBtn = document.createElement("a");
+      downloadBtn.href = fileURL;
+      downloadBtn.download = fileName;
+      downloadBtn.textContent = "مشاركة";
+      downloadBtn.className = "download-btn";
+
+      const renameBtn = document.createElement("button");
+      renameBtn.textContent = "إعادة التسمية";
+      renameBtn.className = "edit-btn";
+      renameBtn.onclick = () => {
+        const newName = prompt("اكتب الاسم الجديد:", fileName);
+        if (!newName || uploadedFiles.has(newName)) return;
+        const data = uploadedFiles.get(fileName);
+        uploadedFiles.delete(fileName);
+        uploadedFiles.set(newName, data);
+        refreshFileList();
+      };
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "حذف";
+      deleteBtn.className = "delete-btn";
+      deleteBtn.onclick = () => {
+        uploadedFiles.delete(fileName);
+        refreshFileList();
+      };
+
+      actions.appendChild(downloadBtn);
+      actions.appendChild(renameBtn);
+      actions.appendChild(deleteBtn);
+      fileItem.appendChild(link);
+      fileItem.appendChild(actions);
+      fileList.appendChild(fileItem);
+    }
+
+    function refreshFileList() {
+      fileList.innerHTML = "";
+      uploadedFiles.forEach((data, name) => {
+        displayFile(name, data.url);
+      });
+    }
+  </script>
+</body>
+</html>

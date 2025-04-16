@@ -1,192 +1,290 @@
-
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple Code Editor</title>
-  <style>
-    body {
+<head>  
+  <meta charset="UTF-8">  
+  <title>مشروعي</title>  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+  <style>  
+    html, body {
       margin: 0;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      font-family: sans-serif;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
     }
-    .toolbar {
-      background: #2c3e50;
+    #topbar {
+      height: 50px;
+      background-color: #333;
       color: white;
-      padding: 10px;
       display: flex;
-      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      gap: 10px;
     }
-    .main-container {
-      display: flex;
-      flex: 1;
-    }
-    .editor-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-    .tabs {
-      display: flex;
-      background: #34495e;
-    }
-    .tab {
-      flex: 1;
-      padding: 10px;
-      text-align: center;
-      cursor: pointer;
+    #topbar button {
+      background-color: #007bff;
       color: white;
-    }
-    .tab.active {
-      background: #2c3e50;
-    }
-    #editor {
-      flex: 1;
-    }
-    .bottom-bar {
-      background: #ecf0f1;
-      padding: 8px;
-      text-align: center;
-    }
-    .bottom-bar button {
-      padding: 6px 12px;
-      margin: 0 5px;
       border: none;
-      background: #3498db;
-      color: white;
-      cursor: pointer;
+      padding: 10px 18px;
       border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
     }
-    .bottom-bar button:hover {
-      background: #2980b9;
+    #main {
+      position: relative;
+      height: calc(100% - 50px);
     }
-    #manualArea {
+    #sidebar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 100%;
+      background-color: #f4f4f4;
+      overflow: hidden;
+      box-sizing: border-box;
+      padding: 0;
+      transition: width 0.4s ease, padding 0.4s ease;
+      z-index: 10;
+    }
+    #sidebar.active {
+      width: 80vw;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    #editor, #textEditor {
       width: 100%;
       height: 100%;
-      font-family: monospace;
-      font-size: 14px;
+    }
+    .sidebar-button {
+      display: block;
+      margin-bottom: 15px;
+      padding: 14px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 18px;
+      text-align: right;
+    }
+    #textEditor {
+      position: absolute;
+      top: 0;
+      left: 0;
       padding: 10px;
       box-sizing: border-box;
+      font-size: 16px;
+      display: none;
+      z-index: 9;
+      direction: ltr;
+      font-family: monospace;
     }
-  </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
-</head>
-<body>
-  <div class="toolbar">
-    <div>Code Editor</div>
-    <div>
-      <button onclick="runCode()">Run</button>
-   
-   
-   <button onclick="window.location.href='ff.html'">اذهب إلى مدير الملفات</button>
-   
-   
-    </div>
+    #previewWindow {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100vw;
+      height: 200px;
+      background: #111;
+      color: #0f0;
+      display: none;
+      flex-direction: column;
+      z-index: 1000;
+    }
+    #closePreview {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      align-self: flex-end;
+      margin: 4px;
+    }
+    #consoleOutput {
+      flex-grow: 1;
+      padding: 10px;
+      font-family: monospace;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    .file-tree {
+      list-style: none;
+      padding: 0;
+      margin: 10px 0 0;
+      font-size: 16px;
+    }
+
+    .file-tree li {
+      margin: 5px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .file-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 100;
+      display: none;
+    }
+
+    .popup input, .popup select {
+      margin-bottom: 10px;
+      padding: 8px;
+      width: 100%;
+    }
+
+    .popup button {
+      background-color: #28a745;
+      color: white;
+      padding: 10px;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .popup .close-popup {
+      background-color: #dc3545;
+    }
+  </style>  
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs/loader.js"></script>  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>  
+<body>  
+  <div id="topbar">  
+    <button id="toggleSidebar">Add</button>  
+    <button id="runCode">Run</button>  
+    <button id="showTextEditor">S</button>  
+    <button id="backToEditor">B</button>  
+  </div>  
+  <div id="main">  
+    <div id="sidebar">  
+      <button class="sidebar-button" id="addFileBtn">إضافة ملف من الهاتف</button>  
+      <button class="sidebar-button" id="createNewFileBtn">إنشاء ملف جديد</button>  
+      <button class="sidebar-button">إعادة تسمية</button>  
+      <button class="sidebar-button">حذف</button>  
+      <button class="sidebar-button">تحميل المشروع كـ ZIP</button>  
+      <button class="sidebar-button">مشاركة المشروع</button>  
+
+      <!-- شجرة الملفات -->
+      <ul class="file-tree" id="fileTree">
+        <li><i class="fas fa-file-code file-icon"></i> index.html</li>
+        <li><i class="fas fa-file-css file-icon"></i> style.css</li>
+        <li><i class="fas fa-file-js file-icon"></i> script.js</li>
+        <li><i class="fas fa-image file-icon"></i> logo.png</li>
+        <li><i class="fas fa-file-pdf file-icon"></i> info.pdf</li>
+      </ul>
+
+    </div>  
+    <div id="editor"></div>  
+    <textarea id="textEditor"></textarea>  
+  </div>  
+  <div id="previewWindow">  
+    <button id="closePreview">X</button>  
+    <div id="consoleOutput"></div>  
+  </div>  
+
+  <!-- نافذة منبثقة لإنشاء ملف جديد -->
+  <div class="popup" id="newFilePopup">
+    <h3>إنشاء ملف جديد</h3>
+    <input type="text" id="newFileName" placeholder="اسم الملف">
+    <select id="fileType">
+      <option value="html">HTML</option>
+      <option value="css">CSS</option>
+      <option value="js">JS</option>
+    </select>
+    <button id="createFileBtn">إنشاء</button>
+    <button class="close-popup" id="closePopupBtn">إغلاق</button>
   </div>
 
-  <div class="main-container">
-    <div class="editor-container">
-      <div class="tabs">
-        <div class="tab active" onclick="switchTab('html')">HTML</div>
-        <div class="tab" onclick="switchTab('css')">CSS</div>
-        <div class="tab" onclick="switchTab('js')">JavaScript</div>
-      </div>
-      <div id="editor"></div>
+  <script>  
+    let editor;  
+    const textEditor = document.getElementById("textEditor");  
+    const editorDiv = document.getElementById("editor");  
+    const previewWindow = document.getElementById("previewWindow");  
+    const consoleOutput = document.getElementById("consoleOutput");
 
-      <div class="bottom-bar">
-        <button onclick="selectAll()">Select All</button>
-        <button onclick="copyToClipboard()">Copy</button>
-        <button onclick="enableManualEdit()">تحديد يدوي</button>
-        <button onclick="returnToEditor()">العودة للمحرر</button>
-      </div>
-    </div>
-  </div>
+    document.getElementById("toggleSidebar").addEventListener("click", () => {  
+      document.getElementById("sidebar").classList.toggle("active");  
+    });  
 
-  <script>
-    let htmlCode = '<h1>Hello World</h1>';
-    let cssCode = 'body { font-family: Arial; }';
-    let jsCode = 'console.log("Hello from JS");';
-    let editorInstance, currentTab = 'html', isManualEdit = false;
-
-    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
-    require(['vs/editor/editor.main'], function () {
-      editorInstance = monaco.editor.create(document.getElementById('editor'), {
-        value: htmlCode,
-        language: 'html',
-        theme: 'vs-dark',
-        automaticLayout: true
-      });
+    // فتح نافذة إضافة الملف الجديد
+    document.getElementById("createNewFileBtn").addEventListener("click", () => {
+      document.getElementById("newFilePopup").style.display = 'block';
     });
 
-    function switchTab(tab) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelector(`.tab:nth-child(${tab === 'html' ? 1 : tab === 'css' ? 2 : 3})`).classList.add('active');
-      if (!editorInstance) return;
+    // إغلاق نافذة إنشاء الملف
+    document.getElementById("closePopupBtn").addEventListener("click", () => {
+      document.getElementById("newFilePopup").style.display = 'none';
+    });
 
-      if (currentTab === 'html') htmlCode = editorInstance.getValue();
-      else if (currentTab === 'css') cssCode = editorInstance.getValue();
-      else jsCode = editorInstance.getValue();
+    // إنشاء الملف الجديد
+    document.getElementById("createFileBtn").addEventListener("click", () => {
+      const fileName = document.getElementById("newFileName").value;
+      const fileType = document.getElementById("fileType").value;
 
-      currentTab = tab;
-      const code = tab === 'html' ? htmlCode : tab === 'css' ? cssCode : jsCode;
-      const lang = tab === 'html' ? 'html' : tab === 'css' ? 'css' : 'javascript';
-      monaco.editor.setModelLanguage(editorInstance.getModel(), lang);
-      editorInstance.setValue(code);
-    }
+      if (fileName) {
+        // إضافة الملف إلى شجرة الملفات
+        const fileTree = document.getElementById("fileTree");
+        const fileItem = document.createElement("li");
+        const fileIcon = document.createElement("i");
+        
+        // إضافة الأيقونة بناءً على نوع الملف
+        if (fileType === "html") {
+          fileIcon.className = "fas fa-file-code file-icon";
+        } else if (fileType === "css") {
+          fileIcon.className = "fas fa-file-css file-icon";
+        } else if (fileType === "js") {
+          fileIcon.className = "fas fa-file-js file-icon";
+        }
 
-    function runCode() {
-      if (!editorInstance) return;
-      if (currentTab === 'html') htmlCode = editorInstance.getValue();
-      else if (currentTab === 'css') cssCode = editorInstance.getValue();
-      else jsCode = editorInstance.getValue();
+        fileItem.appendChild(fileIcon);
+        fileItem.appendChild(document.createTextNode(fileName + "." + fileType));
+        fileTree.appendChild(fileItem);
 
-      const output = `<!DOCTYPE html><html><head><style>${cssCode}</style></head><body>${htmlCode}<script>${jsCode}<\/script></body></html>`;
-      const newWindow = window.open();
-      newWindow.document.open();
-      newWindow.document.write(output);
-      newWindow.document.close();
-    }
+        // إغلاق النافذة
+        document.getElementById("newFilePopup").style.display = 'none';
 
-    function selectAll() {
-      if (!editorInstance) return;
-      const model = editorInstance.getModel();
-      const fullRange = model.getFullModelRange();
-      editorInstance.setSelection(fullRange);
-      editorInstance.focus();
-    }
+        // فتح المحرر بناءً على نوع الملف
+        if (fileType === "html" || fileType === "css" || fileType === "js") {
+          openEditor(fileType, fileName);
+        }
+      }
+    });
 
-    function copyToClipboard() {
-      if (!editorInstance) return;
-      const text = editorInstance.getValue();
-      navigator.clipboard.writeText(text).then(() => {
-        alert("Code copied to clipboard!");
-      });
-    }
-
-    function enableManualEdit() {
-      if (!editorInstance) return;
-      const code = editorInstance.getValue();
-      isManualEdit = true;
-      editorInstance.dispose();
-      document.getElementById('editor').innerHTML = `<textarea id="manualArea">${code}</textarea>`;
-    }
-
-    function returnToEditor() {
-      if (!isManualEdit) return;
-      const code = document.getElementById('manualArea').value;
-      isManualEdit = false;
-      document.getElementById('editor').innerHTML = "";
-      require(['vs/editor/editor.main'], function () {
-        editorInstance = monaco.editor.create(document.getElementById('editor'), {
-          value: code,
-          language: currentTab === 'html' ? 'html' : currentTab === 'css' ? 'css' : 'javascript',
-          theme: 'vs-dark',
-          automaticLayout: true
+    function openEditor(type, fileName) {
+      if (type === "html") {
+        editor = monaco.editor.create(editorDiv, {
+          value: "<!-- اكتب HTML هنا -->",
+          language: "html",
         });
-      });
+      } else if (type === "css") {
+        editor = monaco.editor.create(editorDiv, {
+          value: "/* اكتب CSS هنا */",
+          language: "css",
+        });
+      } else if (type === "js") {
+        editor = monaco.editor.create(editorDiv, {
+          value: "// اكتب JS هنا",
+          language: "javascript",
+        });
+      }
+
+      editorDiv.style.display = "block";
+      textEditor.style.display = "none";
     }
-  </script>
+  </script>  
 </body>
 </html>

@@ -136,6 +136,29 @@
       padding: 4px;
     }
 
+
+
+
+
+
+
+
+#previewWindow {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  color: black ;
+  display: none; /* البداية مخفية */
+  flex-direction: column;
+  z-index: 1000;
+}
+
+
+
+
   </style>  
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs/loader.js"></script>  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>  
@@ -147,7 +170,6 @@
     <button id="runCode">Run</button>  
     <button id="showTextEditor">S</button>  
     <button id="backToEditor">B</button>
-   
   </div>  
   <div id="main">  
     <div id="sidebar">  
@@ -297,32 +319,8 @@
       });
     });
 
-    document.getElementById("runCode").addEventListener("click", () => {  
-      const code = editor.getValue();  
-      const iframe = document.createElement('iframe');  
-      iframe.style.display = 'none';  
-      document.body.appendChild(iframe);  
-      const script = `  
-        <script>  
-          const oldLog = console.log;  
-          console.log = function(...args) {  
-            parent.postMessage({ type: 'log', message: args.join(' ') }, '*');  
-            oldLog.apply(console, args);  
-          };  
-        <\/script>  
-      `;  
-      const html = script + code;  
-      const blob = new Blob([html], { type: 'text/html' });  
-      const url = URL.createObjectURL(blob);  
-      iframe.src = url;  
-
-      previewWindow.style.display = 'flex';  
-      window.addEventListener('message', function (e) {  
-        if (e.data.type === 'log') {  
-          consoleOutput.textContent += e.data.message + '\n';  
-        }  
-      });  
-    });  
+    // حذف الوظائف الخاصة بزر Run
+    document.getElementById("runCode").removeEventListener("click", () => {});
 
     document.getElementById("closePreview").addEventListener("click", () => {  
       previewWindow.style.display = 'none';  
@@ -407,6 +405,66 @@
       textEditor.style.display = "none"; // إخفاء نافذة النص
       editor.getModel().setValue(textEditor.value); // إعادة المحتوى إلى المحرر
     });
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    document.getElementById("runCode").addEventListener("click", () => {
+  const previewWindow = document.getElementById("previewWindow");
+  const consoleOutput = document.getElementById("consoleOutput");
+
+  // الحصول على كود المحرر
+  const code = editor.getValue();
+
+  // إذا كانت نافذة المعاينة تحتوي على iframe سابق، نزيله أولًا لتحديث المحتوى
+  const existingIframe = previewWindow.querySelector("iframe");
+  if (existingIframe) {
+    previewWindow.removeChild(existingIframe);
+  }
+
+  // إنشاء iframe جديد
+  const iframe = document.createElement("iframe");
+  iframe.style.width = "100%";
+  iframe.style.height = "100%";
+  iframe.style.border = "none";
+  previewWindow.appendChild(iframe);
+
+  // الحصول على المستند داخل الـ iframe
+  const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+
+  // كتابة الكود داخل الـ iframe
+  iframeDocument.open();
+  iframeDocument.write(`
+    <html>
+      <head>
+        <style>
+          /* هنا نضيف أي CSS إضافي إذا لزم الأمر */
+        </style>
+      </head>
+      <body>
+        ${code}  <!-- يتم إضافة الكود هنا -->
+      </body>
+    </html>
+  `);
+  iframeDocument.close();
+
+  // إظهار نافذة المعاينة
+  previewWindow.style.display = "flex";
+
+  // إعادة توجيه console.log لعرض المخرجات في نافذة المعاينة
+  iframe.contentWindow.console.log = function(message) {
+    consoleOutput.textContent += message + "\n";
+    consoleOutput.scrollTop = consoleOutput.scrollHeight;  // التمرير للأسفل عند إضافة مخرجات جديدة
+  };
+});
+
+    
+    
   </script>  
 </body>  
 </html>

@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html lang="ar">
 <head>  
   <meta charset="UTF-8">  
   <title>مشروعي</title>  
@@ -128,15 +130,15 @@
       height: 18px;
     }
 
-
-.file-tree li.selected {
-  background-color: #d0e7ff;
-  border-radius: 4px;
-  padding: 4px;
-}
+    .file-tree li.selected {
+      background-color: #d0e7ff;
+      border-radius: 4px;
+      padding: 4px;
+    }
 
   </style>  
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs/loader.js"></script>  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>  
 <body>  
@@ -144,13 +146,14 @@
     <button id="toggleSidebar">Add</button>  
     <button id="runCode">Run</button>  
     <button id="showTextEditor">S</button>  
-    <button id="backToEditor">B</button>  
+    <button id="backToEditor">B</button>
+      <button id="console">C</button>
   </div>  
   <div id="main">  
     <div id="sidebar">  
       <button class="sidebar-button" id="addFileBtn">إضافة ملف من الهاتف</button>  
-      <button class="sidebar-button">إنشاء ملف جديد</button>  
-      <button class="sidebar-button">إعادة تسمية</button>  
+      <button class="sidebar-button" id="createFileBtn">إنشاء ملف جديد</button>  
+      <button class="sidebar-button" id="renameFileBtn">إعادة تسمية</button>  
       <button class="sidebar-button">حذف</button>  
       <button class="sidebar-button">تحميل المشروع كـ ZIP</button>  
       <button class="sidebar-button">مشاركة المشروع</button>  
@@ -173,18 +176,23 @@
     <div id="consoleOutput"></div>  
   </div>  
   <script>  
-    let editor;  
+    let editor;
+    let currentFile = '';  // Keep track of the current file being edited
     const textEditor = document.getElementById("textEditor");  
     const editorDiv = document.getElementById("editor");  
     const previewWindow = document.getElementById("previewWindow");  
     const consoleOutput = document.getElementById("consoleOutput");
 
+    // كائن لحفظ محتويات الملفات
+    const filesContent = {};
+
     document.getElementById("toggleSidebar").addEventListener("click", () => {  
       document.getElementById("sidebar").classList.toggle("active");  
-    });  
+    });
 
-    // Function to handle file selection and update the file tree
-    document.getElementById("addFileBtn").addEventListener("click", () => {
+    // وظيفة لإضافة ملفات من الهاتف
+    document.getElementById("addFileBtn").addEventListener("click", (event) => {
+      event.stopPropagation(); // Prevent event propagation to file tree
       const input = document.createElement('input');
       input.type = 'file';
       input.multiple = true; // Allow multiple files to be selected
@@ -203,6 +211,77 @@
       });
     });
 
+    // وظيفة لإنشاء ملف جديد
+    document.getElementById("createFileBtn").addEventListener("click", () => {
+      const newFileName = prompt("أدخل اسم الملف الجديد:");
+      if (newFileName && newFileName.trim() !== "") {
+        const fileTree = document.getElementById('fileTree');
+        const listItem = document.createElement('li');
+        listItem.innerHTML = `<i class="fas fa-file file-icon"></i> ${newFileName.trim()}`;
+        fileTree.appendChild(listItem);
+        
+        // حفظ المحتوى في الذاكرة
+        filesContent[newFileName.trim()] = '';
+      } else {
+        alert("الرجاء إدخال اسم صالح للملف.");
+      }
+    });
+
+    // وظيفة لإعادة تسمية الملف
+    document.getElementById("renameFileBtn").addEventListener("click", () => {
+      const fileTree = document.getElementById("fileTree");
+      const selectedItem = fileTree.querySelector(".selected");
+
+      if (!selectedItem) {
+        alert("لم يتم تحديد أي ملف لإعادة تسميته.");
+        return;
+      }
+
+      const newFileName = prompt("أدخل الاسم الجديد للملف:", selectedItem.textContent.trim());
+      if (newFileName && newFileName !== selectedItem.textContent.trim()) {
+        // تحديث الاسم في شجرة الملفات
+        selectedItem.innerHTML = `<i class="fas fa-file file-icon"></i> ${newFileName}`;
+
+        // تحديث محتوى الملف في الذاكرة
+        const oldFileName = selectedItem.textContent.trim();
+        filesContent[newFileName] = filesContent[oldFileName];
+        delete filesContent[oldFileName];
+      }
+    });
+
+    // فتح الملف المحدد في المحرر
+    function loadFileContent(fileName) {
+      currentFile = fileName;
+      let fileContent = filesContent[fileName] || ''; // جلب المحتوى من الذاكرة
+
+      if (!fileContent) {
+        // تحديد نوع الملف وملئه بالمحتوى الافتراضي
+        if (fileName.endsWith('.html')) {
+          fileContent = `<!DOCTYPE html><html><head><title>${fileName}</title></head><body><h1>Welcome to ${fileName}</h1></body></html>`;
+        } else if (fileName.endsWith('.css')) {
+          fileContent = `/* Styles for ${fileName} */\nbody { color: #333; }`;
+        } else if (fileName.endsWith('.js')) {
+          fileContent = `// JavaScript code for ${fileName}\nconsole.log("Script loaded")`;
+        }
+        filesContent[fileName] = fileContent;  // حفظ المحتوى في الذاكرة
+      }
+
+      editor.getModel().setValue(fileContent); // عرض المحتوى في المحرر
+      editor.updateOptions({ language: fileName.endsWith('.html') ? 'html' : (fileName.endsWith('.css') ? 'css' : 'javascript') });
+    }
+
+    // تمييز العنصر المحدد عند النقر
+    const fileTree = document.getElementById("fileTree");
+    fileTree.addEventListener("click", (event) => {
+      if (event.target.tagName === "LI") {
+        const selectedItem = event.target;
+        const previousSelected = fileTree.querySelector(".selected");
+        if (previousSelected) previousSelected.classList.remove("selected");
+        selectedItem.classList.add("selected");
+        loadFileContent(selectedItem.textContent.trim());  // Load the content of selected file
+      }
+    });
+
     require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs' } });  
     require(['vs/editor/editor.main'], function () {  
       editor = monaco.editor.create(document.getElementById('editor'), {  
@@ -211,7 +290,12 @@
         theme: 'vs-dark',  
         automaticLayout: true  
       });  
-    });  
+
+      // حفظ المحتوى عند التعديل
+      editor.onDidChangeModelContent(() => {
+        filesContent[currentFile] = editor.getValue();  // حفظ التغييرات في الذاكرة
+      });
+    });
 
     document.getElementById("runCode").addEventListener("click", () => {  
       const code = editor.getValue();  
@@ -243,137 +327,228 @@
     document.getElementById("closePreview").addEventListener("click", () => {  
       previewWindow.style.display = 'none';  
       consoleOutput.textContent = '';  
-    });  
-  
-  
-  
-const fileTree = document.querySelector('.file-tree');
-const newFileBtn = document.querySelectorAll('.sidebar-button')[1]; // زر "إنشاء ملف جديد"
-const fileContents = {}; // لتخزين محتوى كل ملف
-let currentFile = null; // اسم الملف الحالي المفتوح
-
-// إنشاء ملف جديد عند الضغط على الزر
-newFileBtn.addEventListener('click', () => {
-  const fileName = prompt("أدخل اسم الملف (مثال: index.html):");
-  if (!fileName) return;
-
-  // إنشاء العنصر في شجرة الملفات
-  const li = document.createElement('li');
-  const icon = document.createElement('i');
-  icon.className = `fas file-icon ${getFileIconClass(fileName)}`;
-  li.appendChild(icon);
-  li.appendChild(document.createTextNode(' ' + fileName));
-  fileTree.appendChild(li);
-
-  // إعداد المحتوى المبدئي للملف
-  fileContents[fileName] = "";
-
-  // ربط الحدث بالنقر لفتح الملف
-  li.addEventListener('click', () => {
-    openFile(fileName);
-  });
-
-  // إذا كان نوع الملف مدعومًا، افتحه تلقائيًا
-  if (fileName.endsWith('.html') || fileName.endsWith('.css') || fileName.endsWith('.js')) {
-    openFile(fileName);
-  }
-});
-
-// تحديد نوع الأيقونة حسب الامتداد
-function getFileIconClass(fileName) {
-  if (fileName.endsWith('.html') || fileName.endsWith('.htm')) return 'fa-file-code';
-  if (fileName.endsWith('.css')) return 'fa-file-css';
-  if (fileName.endsWith('.js')) return 'fa-file-js';
-  if (fileName.endsWith('.png') || fileName.endsWith('.jpg')) return 'fa-image';
-  if (fileName.endsWith('.pdf')) return 'fa-file-pdf';
-  return 'fa-file';
-}
-
-// فتح الملف في المحرر
-function openFile(fileName) {
-  currentFile = fileName;
-  const content = fileContents[fileName] || "";
-  editor.setValue(content);
-}
-
-// حفظ التغييرات تلقائيًا في الملف الحالي
-editor.onDidChangeModelContent(() => {
-  if (currentFile) {
-    fileContents[currentFile] = editor.getValue();
-  }
-});
-
-  
-const renameFileBtn = document.querySelectorAll('.sidebar-button')[2]; // زر إعادة التسمية
-
-renameFileBtn.addEventListener('click', () => {
-  if (!currentFile) {
-    alert("لم يتم تحديد أي ملف لإعادة تسميته.");
-    return;
-  }
-
-  const newFileName = prompt("أدخل الاسم الجديد للملف:", currentFile);
-  if (!newFileName || newFileName === currentFile) return;
-
-  // تحديث المحتوى
-  fileContents[newFileName] = fileContents[currentFile];
-  delete fileContents[currentFile];
-
-  // تحديث الملف الحالي
-  currentFile = newFileName;
-
-  // تحديث المحرر إذا كان الملف مفتوح
-  editor.setValue(fileContents[newFileName]);
-
-  // تحديث اسم الملف في شجرة الملفات
-  const fileItems = document.querySelectorAll('.file-tree li');
-  fileItems.forEach(item => {
-    if (item.textContent.trim() === currentFile || item.textContent.trim() === newFileName) {
-      item.childNodes[1].nodeValue = ' ' + newFileName; // تعديل النص بعد الأيقونة
-    }
-  });
-});
-  
-  
-  
-  
-  document.querySelectorAll("#fileTree li").forEach((item) => {
-  item.addEventListener("click", () => {
-    // إزالة التحديد من جميع العناصر
-    document.querySelectorAll("#fileTree li").forEach((li) => {
-      li.classList.remove("selected");
     });
-    // تفعيل التحديد على العنصر الذي تم النقر عليه
-    item.classList.add("selected");
+
+    // إضافة وظيفة زر الحذف
+    document.querySelectorAll('.sidebar-button')[3].addEventListener("click", () => {
+      const fileTree = document.getElementById("fileTree");
+      const selectedItem = fileTree.querySelector(".selected");
+
+      if (!selectedItem) {
+        alert("لم يتم تحديد أي ملف لحذفه.");
+        return;
+      }
+
+      // تأكيد الحذف
+      const confirmDelete = confirm("هل أنت متأكد أنك تريد حذف هذا الملف؟");
+      if (confirmDelete) {
+        // حذف العنصر من شجرة الملفات
+        selectedItem.remove();
+
+        // حذف المحتوى من الذاكرة
+        const fileName = selectedItem.textContent.trim();
+        delete filesContent[fileName];
+      }
+    });
+
+    // إضافة وظيفة الزر "مشاركة المشروع" باستخدام Web Share API
+    document.querySelectorAll(".sidebar-button")[5].addEventListener("click", () => {
+      // تأكد أن Web Share API مدعومة من المتصفح
+      if (navigator.share) {
+        const subject = "مشاركة المشروع";
+        let projectContent = "";
+
+        // تجميع محتوى المشروع (الملفات وبياناتها)
+        for (const [fileName, content] of Object.entries(filesContent)) {
+          projectContent += `${fileName}:\n${content}\n\n`;
+        }
+
+        // البيانات التي سيتم مشاركتها
+        navigator.share({
+          title: subject,
+          text: projectContent,
+          url: window.location.href // يمكنك استخدام رابط المشروع إذا كان لديك
+        }).then(() => {
+          console.log("تمت المشاركة بنجاح!");
+        }).catch((error) => {
+          console.log("حدث خطأ أثناء المشاركة: ", error);
+        });
+      } else {
+        alert("Web Share API غير مدعومة في متصفحك.");
+      }
+    });
+
+    // إضافة وظيفة تحميل المشروع كـ ZIP
+    document.querySelectorAll(".sidebar-button")[4].addEventListener("click", () => {
+      const zip = new JSZip();
+      
+      // إضافة الملفات إلى الZIP
+      for (const [fileName, content] of Object.entries(filesContent)) {
+        zip.file(fileName, content);
+      }
+
+      // إنشاء ملف ZIP وتنزيله
+      zip.generateAsync({ type: "blob" }).then(function (blob) {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "project.zip";
+        link.click();
+      });
+    });
+
+    // إضافة وظيفة زر "S" لإظهار نافذة النص
+    document.getElementById("showTextEditor").addEventListener("click", () => {
+      textEditor.style.display = "block"; // عرض نافذة النص
+      textEditor.value = editor.getValue(); // نسخ محتوى المحرر إلى النص
+    });
+
+    // إضافة وظيفة زر "B" لإخفاء نافذة النص
+    document.getElementById("backToEditor").addEventListener("click", () => {
+      textEditor.style.display = "none"; // إخفاء نافذة النص
+      editor.getModel().setValue(textEditor.value); // إعادة المحتوى إلى المحرر
+    });
+
+
+
+
+
+
+  // إظهار نافذة الكونسول عند الضغط على الزر "C"
+  document.getElementById("console").addEventListener("click", () => {
+    // إظهار نافذة الـ console
+    previewWindow.style.display = 'flex';
   });
+
+  // فتح نافذة الكونسول عند تنفيذ الكود
+  document.getElementById("runCode").addEventListener("click", () => {
+    const code = editor.getValue();  
+    const iframe = document.createElement('iframe');  
+    iframe.style.display = 'none';  
+    document.body.appendChild(iframe);  
+    const script = `  
+      <script>  
+        const oldLog = console.log;  
+        console.log = function(...args) {  
+          parent.postMessage({ type: 'log', message: args.join(' ') }, '*');  
+          oldLog.apply(console, args);  
+        };  
+      <\/script>  
+    `;  
+    const html = script + code;  
+    const blob = new Blob([html], { type: 'text/html' });  
+    const url = URL.createObjectURL(blob);  
+    iframe.src = url;  
+
+    // تأكد من أن نافذة الـ console مفتوحة
+    previewWindow.style.display = 'flex';  
+
+    window.addEventListener('message', function (e) {  
+      if (e.data.type === 'log') {  
+        // إضافة الرسائل القادمة من الكونسول إلى نافذة المخرجات
+        consoleOutput.textContent += e.data.message + '\n';  
+      }  
+    });  
+  });
+
+  // إغلاق نافذة الكونسول عند الضغط على زر الإغلاق
+  document.getElementById("closePreview").addEventListener("click", () => {  
+    previewWindow.style.display = 'none';  
+    consoleOutput.textContent = '';  
+  });
+
+
+
+
+
+
+
+
+
+  // تفعيل زر C لإظهار نافذة الـ Console
+  document.getElementById("console").addEventListener("click", () => {
+    document.getElementById("previewWindow").style.display = "flex";
+  });
+
+  // زر لإغلاق نافذة الـ Console
+  document.getElementById("closePreview").addEventListener("click", () => {
+    document.getElementById("previewWindow").style.display = "none";
+  });
+
+  // اعتراض console.log وطباعته في العنصر #consoleOutput
+  (function () {
+    const originalLog = console.log;
+    console.log = function (...args) {
+      originalLog.apply(console, args);
+      const output = args.map(arg => {
+        try {
+          return typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg);
+        } catch (e) {
+          return String(arg);
+        }
+      }).join(" ");
+      const consoleOutput = document.getElementById("consoleOutput");
+      if (consoleOutput) {
+        consoleOutput.textContent += output + "\n";
+      }
+    };
+  })();
+
+
+
+
+
+
+
+
+
+document.getElementById("console").addEventListener("click", () => {
+  const code = editor.getValue();
+
+  // إعداد نافذة العرض
+  const iframe = document.createElement("iframe");
+  iframe.style.display = "none";
+  document.body.appendChild(iframe);
+
+  const consoleOutput = document.getElementById("consoleOutput");
+  consoleOutput.textContent = ""; // تنظيف النتائج السابقة
+
+  const scriptContent = `
+    (function(){
+      const originalLog = console.log;
+      console.log = function(...args) {
+        parent.postMessage({ type: 'console-log', message: args.join(' ') }, '*');
+        originalLog.apply(console, args);
+      };
+      try {
+        ${code}
+      } catch (e) {
+        console.log("Error: " + e.message);
+      }
+    })();
+  `;
+
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write(`<script>${scriptContent}<\/script>`);
+  doc.close();
+
+  // عرض نافذة الـ Console
+  document.getElementById("previewWindow").style.display = "flex";
 });
 
-  
-  
+// استقبال رسائل console.log من iframe
+window.addEventListener("message", (event) => {
+  if (event.data.type === 'console-log') {
+    const output = document.getElementById("consoleOutput");
+    output.textContent += event.data.message + "\\n";
+  }
+});
 
-
-
-
-
-
-const fileTree = document.getElementById("fileTree");
-
-fileTree.addEventListener("click", (e) => {
-  const li = e.target.closest("li");
-  if (!li) return;
-
-  // إزالة التحديد من كل العناصر
-  fileTree.querySelectorAll("li").forEach(item => item.classList.remove("selected"));
-
-  // تمييز العنصر المحدد
-  li.classList.add("selected");
-
-  // إذا أردت تنفيذ شيء عند تحديد الملف (مثلاً فتحه في المحرر)، أضف الكود هنا
-  console.log("تم تحديد الملف:", li.textContent.trim());
+document.getElementById("closePreview").addEventListener("click", () => {
+  document.getElementById("previewWindow").style.display = "none";
 });
 
 
-    
   </script>  
- 
-</body>
+</body>  
+</html>

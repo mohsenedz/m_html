@@ -407,101 +407,28 @@
       textEditor.style.display = "none"; // إخفاء نافذة النص
       editor.getModel().setValue(textEditor.value); // إعادة المحتوى إلى المحرر
     });
-
-
-
-
-
-
-  // إظهار نافذة الكونسول عند الضغط على الزر "C"
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   document.getElementById("console").addEventListener("click", () => {
-    // إظهار نافذة الـ console
-    previewWindow.style.display = 'flex';
-  });
-
-  // فتح نافذة الكونسول عند تنفيذ الكود
-  document.getElementById("runCode").addEventListener("click", () => {
-    const code = editor.getValue();  
-    const iframe = document.createElement('iframe');  
-    iframe.style.display = 'none';  
-    document.body.appendChild(iframe);  
-    const script = `  
-      <script>  
-        const oldLog = console.log;  
-        console.log = function(...args) {  
-          parent.postMessage({ type: 'log', message: args.join(' ') }, '*');  
-          oldLog.apply(console, args);  
-        };  
-      <\/script>  
-    `;  
-    const html = script + code;  
-    const blob = new Blob([html], { type: 'text/html' });  
-    const url = URL.createObjectURL(blob);  
-    iframe.src = url;  
-
-    // تأكد من أن نافذة الـ console مفتوحة
-    previewWindow.style.display = 'flex';  
-
-    window.addEventListener('message', function (e) {  
-      if (e.data.type === 'log') {  
-        // إضافة الرسائل القادمة من الكونسول إلى نافذة المخرجات
-        consoleOutput.textContent += e.data.message + '\n';  
-      }  
-    });  
-  });
-
-  // إغلاق نافذة الكونسول عند الضغط على زر الإغلاق
-  document.getElementById("closePreview").addEventListener("click", () => {  
-    previewWindow.style.display = 'none';  
-    consoleOutput.textContent = '';  
-  });
-
-
-
-
-
-
-
-
-
-  // تفعيل زر C لإظهار نافذة الـ Console
-  document.getElementById("console").addEventListener("click", () => {
-    document.getElementById("previewWindow").style.display = "flex";
-  });
-
-  // زر لإغلاق نافذة الـ Console
-  document.getElementById("closePreview").addEventListener("click", () => {
-    document.getElementById("previewWindow").style.display = "none";
-  });
-
-  // اعتراض console.log وطباعته في العنصر #consoleOutput
-  (function () {
-    const originalLog = console.log;
-    console.log = function (...args) {
-      originalLog.apply(console, args);
-      const output = args.map(arg => {
-        try {
-          return typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg);
-        } catch (e) {
-          return String(arg);
-        }
-      }).join(" ");
-      const consoleOutput = document.getElementById("consoleOutput");
-      if (consoleOutput) {
-        consoleOutput.textContent += output + "\n";
-      }
-    };
-  })();
-
-
-
-
-
-
-
-
-
-document.getElementById("console").addEventListener("click", () => {
   const code = editor.getValue();
 
   // إعداد نافذة العرض
@@ -547,8 +474,8 @@ window.addEventListener("message", (event) => {
 document.getElementById("closePreview").addEventListener("click", () => {
   document.getElementById("previewWindow").style.display = "none";
 });
-
-
+  
+  
   </script>  
 </body>  
 </html>

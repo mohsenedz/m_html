@@ -127,6 +127,14 @@
       width: 18px;
       height: 18px;
     }
+
+
+.file-tree li.selected {
+  background-color: #d0e7ff;
+  border-radius: 4px;
+  padding: 4px;
+}
+
   </style>  
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs/loader.js"></script>  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -325,6 +333,22 @@ renameFileBtn.addEventListener('click', () => {
     }
   });
 });
+  
+  
+  
+  
+  document.querySelectorAll("#fileTree li").forEach((item) => {
+  item.addEventListener("click", () => {
+    // إزالة التحديد من جميع العناصر
+    document.querySelectorAll("#fileTree li").forEach((li) => {
+      li.classList.remove("selected");
+    });
+    // تفعيل التحديد على العنصر الذي تم النقر عليه
+    item.classList.add("selected");
+  });
+});
+
+  
   
   
   </script>  

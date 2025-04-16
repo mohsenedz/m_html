@@ -127,37 +127,6 @@
       width: 18px;
       height: 18px;
     }
-
-    .popup {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background-color: white;
-      padding: 20px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      z-index: 100;
-      display: none;
-    }
-
-    .popup input, .popup select {
-      margin-bottom: 10px;
-      padding: 8px;
-      width: 100%;
-    }
-
-    .popup button {
-      background-color: #28a745;
-      color: white;
-      padding: 10px;
-      border: none;
-      cursor: pointer;
-      width: 100%;
-    }
-
-    .popup .close-popup {
-      background-color: #dc3545;
-    }
   </style>  
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs/loader.js"></script>  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -172,7 +141,7 @@
   <div id="main">  
     <div id="sidebar">  
       <button class="sidebar-button" id="addFileBtn">إضافة ملف من الهاتف</button>  
-      <button class="sidebar-button" id="createNewFileBtn">إنشاء ملف جديد</button>  
+      <button class="sidebar-button">إنشاء ملف جديد</button>  
       <button class="sidebar-button">إعادة تسمية</button>  
       <button class="sidebar-button">حذف</button>  
       <button class="sidebar-button">تحميل المشروع كـ ZIP</button>  
@@ -195,20 +164,6 @@
     <button id="closePreview">X</button>  
     <div id="consoleOutput"></div>  
   </div>  
-
-  <!-- نافذة منبثقة لإنشاء ملف جديد -->
-  <div class="popup" id="newFilePopup">
-    <h3>إنشاء ملف جديد</h3>
-    <input type="text" id="newFileName" placeholder="اسم الملف">
-    <select id="fileType">
-      <option value="html">HTML</option>
-      <option value="css">CSS</option>
-      <option value="js">JS</option>
-    </select>
-    <button id="createFileBtn">إنشاء</button>
-    <button class="close-popup" id="closePopupBtn">إغلاق</button>
-  </div>
-
   <script>  
     let editor;  
     const textEditor = document.getElementById("textEditor");  
@@ -220,71 +175,158 @@
       document.getElementById("sidebar").classList.toggle("active");  
     });  
 
-    // فتح نافذة إضافة الملف الجديد
-    document.getElementById("createNewFileBtn").addEventListener("click", () => {
-      document.getElementById("newFilePopup").style.display = 'block';
-    });
+    // Function to handle file selection and update the file tree
+    document.getElementById("addFileBtn").addEventListener("click", () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.multiple = true; // Allow multiple files to be selected
+      input.click();
 
-    // إغلاق نافذة إنشاء الملف
-    document.getElementById("closePopupBtn").addEventListener("click", () => {
-      document.getElementById("newFilePopup").style.display = 'none';
-    });
-
-    // إنشاء الملف الجديد
-    document.getElementById("createFileBtn").addEventListener("click", () => {
-      const fileName = document.getElementById("newFileName").value;
-      const fileType = document.getElementById("fileType").value;
-
-      if (fileName) {
-        // إضافة الملف إلى شجرة الملفات
-        const fileTree = document.getElementById("fileTree");
-        const fileItem = document.createElement("li");
-        const fileIcon = document.createElement("i");
+      input.addEventListener('change', (e) => {
+        const files = e.target.files;
+        const fileTree = document.getElementById('fileTree');
         
-        // إضافة الأيقونة بناءً على نوع الملف
-        if (fileType === "html") {
-          fileIcon.className = "fas fa-file-code file-icon";
-        } else if (fileType === "css") {
-          fileIcon.className = "fas fa-file-css file-icon";
-        } else if (fileType === "js") {
-          fileIcon.className = "fas fa-file-js file-icon";
-        }
-
-        fileItem.appendChild(fileIcon);
-        fileItem.appendChild(document.createTextNode(fileName + "." + fileType));
-        fileTree.appendChild(fileItem);
-
-        // إغلاق النافذة
-        document.getElementById("newFilePopup").style.display = 'none';
-
-        // فتح المحرر بناءً على نوع الملف
-        if (fileType === "html" || fileType === "css" || fileType === "js") {
-          openEditor(fileType, fileName);
-        }
-      }
+        // Add selected files to the file tree
+        Array.from(files).forEach(file => {
+          const listItem = document.createElement('li');
+          listItem.innerHTML = `<i class="fas fa-file file-icon"></i> ${file.name}`;
+          fileTree.appendChild(listItem);
+        });
+      });
     });
 
-    function openEditor(type, fileName) {
-      if (type === "html") {
-        editor = monaco.editor.create(editorDiv, {
-          value: "<!-- اكتب HTML هنا -->",
-          language: "html",
-        });
-      } else if (type === "css") {
-        editor = monaco.editor.create(editorDiv, {
-          value: "/* اكتب CSS هنا */",
-          language: "css",
-        });
-      } else if (type === "js") {
-        editor = monaco.editor.create(editorDiv, {
-          value: "// اكتب JS هنا",
-          language: "javascript",
-        });
-      }
+    require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs' } });  
+    require(['vs/editor/editor.main'], function () {  
+      editor = monaco.editor.create(document.getElementById('editor'), {  
+        value: `<!DOCTYPE html>\n<html>\n  <body>\n    <h1>Hello!</h1>\n    <script>\n      console.log("مرحبًا بالعالم");\n      console.log("تم تشغيل الكود");\n    <\/script>\n  </body>\n</html>`,  
+        language: 'html',  
+        theme: 'vs-dark',  
+        automaticLayout: true  
+      });  
+    });  
 
-      editorDiv.style.display = "block";
-      textEditor.style.display = "none";
+    document.getElementById("runCode").addEventListener("click", () => {  
+      const code = editor.getValue();  
+      const iframe = document.createElement('iframe');  
+      iframe.style.display = 'none';  
+      document.body.appendChild(iframe);  
+      const script = `  
+        <script>  
+          const oldLog = console.log;  
+          console.log = function(...args) {  
+            parent.postMessage({ type: 'log', message: args.join(' ') }, '*');  
+            oldLog.apply(console, args);  
+          };  
+        <\/script>  
+      `;  
+      const html = script + code;  
+      const blob = new Blob([html], { type: 'text/html' });  
+      const url = URL.createObjectURL(blob);  
+      iframe.src = url;  
+
+      previewWindow.style.display = 'flex';  
+      window.addEventListener('message', function (e) {  
+        if (e.data.type === 'log') {  
+          consoleOutput.textContent += e.data.message + '\n';  
+        }  
+      });  
+    });  
+
+    document.getElementById("closePreview").addEventListener("click", () => {  
+      previewWindow.style.display = 'none';  
+      consoleOutput.textContent = '';  
+    });  
+  
+  
+  
+const fileTree = document.querySelector('.file-tree');
+const newFileBtn = document.querySelectorAll('.sidebar-button')[1]; // زر "إنشاء ملف جديد"
+const fileContents = {}; // لتخزين محتوى كل ملف
+let currentFile = null; // اسم الملف الحالي المفتوح
+
+// إنشاء ملف جديد عند الضغط على الزر
+newFileBtn.addEventListener('click', () => {
+  const fileName = prompt("أدخل اسم الملف (مثال: index.html):");
+  if (!fileName) return;
+
+  // إنشاء العنصر في شجرة الملفات
+  const li = document.createElement('li');
+  const icon = document.createElement('i');
+  icon.className = `fas file-icon ${getFileIconClass(fileName)}`;
+  li.appendChild(icon);
+  li.appendChild(document.createTextNode(' ' + fileName));
+  fileTree.appendChild(li);
+
+  // إعداد المحتوى المبدئي للملف
+  fileContents[fileName] = "";
+
+  // ربط الحدث بالنقر لفتح الملف
+  li.addEventListener('click', () => {
+    openFile(fileName);
+  });
+
+  // إذا كان نوع الملف مدعومًا، افتحه تلقائيًا
+  if (fileName.endsWith('.html') || fileName.endsWith('.css') || fileName.endsWith('.js')) {
+    openFile(fileName);
+  }
+});
+
+// تحديد نوع الأيقونة حسب الامتداد
+function getFileIconClass(fileName) {
+  if (fileName.endsWith('.html') || fileName.endsWith('.htm')) return 'fa-file-code';
+  if (fileName.endsWith('.css')) return 'fa-file-css';
+  if (fileName.endsWith('.js')) return 'fa-file-js';
+  if (fileName.endsWith('.png') || fileName.endsWith('.jpg')) return 'fa-image';
+  if (fileName.endsWith('.pdf')) return 'fa-file-pdf';
+  return 'fa-file';
+}
+
+// فتح الملف في المحرر
+function openFile(fileName) {
+  currentFile = fileName;
+  const content = fileContents[fileName] || "";
+  editor.setValue(content);
+}
+
+// حفظ التغييرات تلقائيًا في الملف الحالي
+editor.onDidChangeModelContent(() => {
+  if (currentFile) {
+    fileContents[currentFile] = editor.getValue();
+  }
+});
+
+  
+const renameFileBtn = document.querySelectorAll('.sidebar-button')[2]; // زر إعادة التسمية
+
+renameFileBtn.addEventListener('click', () => {
+  if (!currentFile) {
+    alert("لم يتم تحديد أي ملف لإعادة تسميته.");
+    return;
+  }
+
+  const newFileName = prompt("أدخل الاسم الجديد للملف:", currentFile);
+  if (!newFileName || newFileName === currentFile) return;
+
+  // تحديث المحتوى
+  fileContents[newFileName] = fileContents[currentFile];
+  delete fileContents[currentFile];
+
+  // تحديث الملف الحالي
+  currentFile = newFileName;
+
+  // تحديث المحرر إذا كان الملف مفتوح
+  editor.setValue(fileContents[newFileName]);
+
+  // تحديث اسم الملف في شجرة الملفات
+  const fileItems = document.querySelectorAll('.file-tree li');
+  fileItems.forEach(item => {
+    if (item.textContent.trim() === currentFile || item.textContent.trim() === newFileName) {
+      item.childNodes[1].nodeValue = ' ' + newFileName; // تعديل النص بعد الأيقونة
     }
+  });
+});
+  
+  
   </script>  
+ 
 </body>
-</html>

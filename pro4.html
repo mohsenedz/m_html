@@ -350,7 +350,30 @@ renameFileBtn.addEventListener('click', () => {
 
   
   
-  
+
+
+
+
+
+
+const fileTree = document.getElementById("fileTree");
+
+fileTree.addEventListener("click", (e) => {
+  const li = e.target.closest("li");
+  if (!li) return;
+
+  // إزالة التحديد من كل العناصر
+  fileTree.querySelectorAll("li").forEach(item => item.classList.remove("selected"));
+
+  // تمييز العنصر المحدد
+  li.classList.add("selected");
+
+  // إذا أردت تنفيذ شيء عند تحديد الملف (مثلاً فتحه في المحرر)، أضف الكود هنا
+  console.log("تم تحديد الملف:", li.textContent.trim());
+});
+
+
+    
   </script>  
  
 </body>

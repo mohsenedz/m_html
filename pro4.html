@@ -465,6 +465,45 @@
 
     
     
+    
+    
+    
+    // حفظ كل التغييرات تلقائيًا في localStorage عند أي تغيير
+function saveToLocal() {
+  localStorage.setItem('filesContent', JSON.stringify(filesContent));
+}
+
+// تحميل البيانات عند بداية التشغيل
+function loadFromLocal() {
+  const saved = localStorage.getItem('filesContent');
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    Object.assign(filesContent, parsed);
+
+    // إعادة عرض الملفات في القائمة
+    const fileTree = document.getElementById('fileTree');
+    fileTree.innerHTML = ''; // تفريغ القائمة
+
+    Object.keys(parsed).forEach(fileName => {
+      const listItem = document.createElement('li');
+      listItem.innerHTML = `<i class="fas fa-file file-icon"></i> ${fileName}`;
+      fileTree.appendChild(listItem);
+    });
+  }
+}
+
+loadFromLocal(); // تشغيلها عند بداية الصفحة
+
+// كل مرة يتغير فيها محتوى الملف الحالي
+editor.onDidChangeModelContent(() => {
+  if (currentFile) {
+    filesContent[currentFile] = editor.getValue();
+    saveToLocal(); // حفظ التغييرات في localStorage
+  }
+});
+
+    
+    
   </script>  
 </body>  
 </html>

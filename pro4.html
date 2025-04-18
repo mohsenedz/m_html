@@ -393,21 +393,36 @@
 
     // إضافة وظيفة تحميل المشروع كـ ZIP
     document.querySelectorAll(".sidebar-button")[4].addEventListener("click", () => {
-      const zip = new JSZip();
-      
-      // إضافة الملفات إلى الZIP
-      for (const [fileName, content] of Object.entries(filesContent)) {
-        zip.file(fileName, content);
+  const zip = new JSZip();
+
+  for (const [fileName, content] of Object.entries(filesContent)) {
+    if (content.startsWith("data:")) {
+      // تحويل base64 إلى Blob
+      const base64Data = content.split(',')[1];
+      const mime = content.match(/data:(.*?);base64/)[1];
+      const byteCharacters = atob(base64Data);
+      const byteArrays = [];
+
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteArrays.push(byteCharacters.charCodeAt(i));
       }
 
-      // إنشاء ملف ZIP وتنزيله
-      zip.generateAsync({ type: "blob" }).then(function (blob) {
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "project.zip";
-        link.click();
-      });
-    });
+      const blob = new Blob([new Uint8Array(byteArrays)], { type: mime });
+      zip.file(fileName, blob);
+    } else {
+      // ملفات نصية عادية
+      zip.file(fileName, content);
+    }
+  }
+
+  zip.generateAsync({ type: "blob" }).then(function (blob) {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "project.zip";
+    link.click();
+  });
+});
+
 
     // إضافة وظيفة زر "S" لإظهار نافذة النص
     document.getElementById("showTextEditor").addEventListener("click", () => {

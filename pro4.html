@@ -226,10 +226,25 @@
         
         // Add selected files to the file tree
         Array.from(files).forEach(file => {
-          const listItem = document.createElement('li');
-          listItem.innerHTML = `<i class="fas fa-file file-icon"></i> ${file.name}`;
-          fileTree.appendChild(listItem);
-        });
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const fileName = file.name;
+
+    // حفظ المحتوى في الذاكرة
+    filesContent[fileName] = e.target.result;
+
+    // إضافة الملف إلى شجرة الملفات
+    const listItem = document.createElement('li');
+    listItem.innerHTML = `<i class="fas ${file.type.startsWith("image/") ? "fa-image" : "fa-file"} file-icon"></i> ${fileName}`;
+    fileTree.appendChild(listItem);
+  };
+
+  if (file.type.startsWith("image/")) {
+    reader.readAsDataURL(file); // تحويل الصور إلى base64
+  } else {
+    reader.readAsText(file); // غير الصور: كنص
+  }
+});
       });
     });
 
@@ -419,7 +434,16 @@
   const consoleOutput = document.getElementById("consoleOutput");
 
   // الحصول على كود المحرر
-  const code = editor.getValue();
+  let code = editor.getValue();
+
+// استبدال روابط الصور بأكواد base64 إذا كانت موجودة في filesContent
+for (const [fileName, content] of Object.entries(filesContent)) {
+  if (fileName.match(/\.(png|jpg|jpeg|gif|svg)$/i)) {
+    const regex = new RegExp(`src=["']${fileName}["']`, 'g');
+    code = code.replace(regex, `src="${content}"`);
+  }
+}
+
 
   // إذا كانت نافذة المعاينة تحتوي على iframe سابق، نزيله أولًا لتحديث المحتوى
   const existingIframe = previewWindow.querySelector("iframe");
@@ -461,45 +485,6 @@
     consoleOutput.textContent += message + "\n";
     consoleOutput.scrollTop = consoleOutput.scrollHeight;  // التمرير للأسفل عند إضافة مخرجات جديدة
   };
-});
-
-    
-    
-    
-    
-    
-    // حفظ كل التغييرات تلقائيًا في localStorage عند أي تغيير
-function saveToLocal() {
-  localStorage.setItem('filesContent', JSON.stringify(filesContent));
-}
-
-// تحميل البيانات عند بداية التشغيل
-function loadFromLocal() {
-  const saved = localStorage.getItem('filesContent');
-  if (saved) {
-    const parsed = JSON.parse(saved);
-    Object.assign(filesContent, parsed);
-
-    // إعادة عرض الملفات في القائمة
-    const fileTree = document.getElementById('fileTree');
-    fileTree.innerHTML = ''; // تفريغ القائمة
-
-    Object.keys(parsed).forEach(fileName => {
-      const listItem = document.createElement('li');
-      listItem.innerHTML = `<i class="fas fa-file file-icon"></i> ${fileName}`;
-      fileTree.appendChild(listItem);
-    });
-  }
-}
-
-loadFromLocal(); // تشغيلها عند بداية الصفحة
-
-// كل مرة يتغير فيها محتوى الملف الحالي
-editor.onDidChangeModelContent(() => {
-  if (currentFile) {
-    filesContent[currentFile] = editor.getValue();
-    saveToLocal(); // حفظ التغييرات في localStorage
-  }
 });
 
     

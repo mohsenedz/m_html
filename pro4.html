@@ -341,19 +341,7 @@ if (savedData) {
 require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs' } });  
 require(['vs/editor/editor.main'], function () {
   // استعادة الملفات من localStorage
-  const savedData = localStorage.getItem("savedFiles");
-  if (savedData) {
-    const parsedData = JSON.parse(savedData);
-    for (const [fileName, content] of Object.entries(parsedData)) {
-      filesContent[fileName] = content;
-
-      // عرض الملفات في الشجرة
-      const listItem = document.createElement('li');
-      listItem.innerHTML = `<i class="fas ${fileName.match(/\.(png|jpg|jpeg|gif|svg|mp4)$/i) ? "fa-image" : "fa-file"} file-icon"></i> ${fileName}`;
-      document.getElementById("fileTree").appendChild(listItem);
-    }
-  }
-
+  
   // استرجاع آخر ملف كان مفتوحًا
   const lastFile = localStorage.getItem("currentFile");
 const defaultValue = lastFile && filesContent[lastFile]
@@ -560,5 +548,4 @@ for (const [fileName, content] of Object.entries(filesContent)) {
     
   </script>  
 </body>  
-  </html>
-  
+</html>

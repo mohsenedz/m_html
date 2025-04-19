@@ -232,7 +232,7 @@
 
     // حفظ المحتوى في الذاكرة
     filesContent[fileName] = e.target.result;
-
+localStorage.setItem("savedFiles", JSON.stringify(filesContent));
     // إضافة الملف إلى شجرة الملفات
     const listItem = document.createElement('li');
     listItem.innerHTML = `<i class="fas ${file.type.startsWith("image/") ? "fa-image" : "fa-file"} file-icon"></i> ${fileName}`;
@@ -259,6 +259,7 @@
         
         // حفظ المحتوى في الذاكرة
         filesContent[newFileName.trim()] = '';
+        localStorage.setItem("savedFiles", JSON.stringify(filesContent));
       } else {
         alert("الرجاء إدخال اسم صالح للملف.");
       }
@@ -283,12 +284,16 @@
         const oldFileName = selectedItem.textContent.trim();
         filesContent[newFileName] = filesContent[oldFileName];
         delete filesContent[oldFileName];
+        localStorage.setItem("savedFiles", JSON.stringify(filesContent));
       }
     });
 
     // فتح الملف المحدد في المحرر
     function loadFileContent(fileName) {
       currentFile = fileName;
+      localStorage.setItem("currentFile", fileName);
+
+      
       let fileContent = filesContent[fileName] || ''; // جلب المحتوى من الذاكرة
 
       if (!fileContent) {
@@ -319,20 +324,68 @@
       }
     });
 
-    require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs' } });  
-    require(['vs/editor/editor.main'], function () {  
-      editor = monaco.editor.create(document.getElementById('editor'), {  
-        value: `<!DOCTYPE html>\n<html>\n  <body>\n    <h1>Hello!</h1>\n    <script>\n      console.log("مرحبًا بالعالم");\n      console.log("تم تشغيل الكود");\n    <\/script>\n  </body>\n</html>`,  
-        language: 'html',  
-        theme: 'vs-dark',  
-        automaticLayout: true  
-      });  
+    const savedData = localStorage.getItem("savedFiles");
+if (savedData) {
+  const parsedData = JSON.parse(savedData);
+  for (const [fileName, content] of Object.entries(parsedData)) {
+    filesContent[fileName] = content;
 
-      // حفظ المحتوى عند التعديل
-      editor.onDidChangeModelContent(() => {
-        filesContent[currentFile] = editor.getValue();  // حفظ التغييرات في الذاكرة
-      });
-    });
+    // عرض الملفات في شجرة الملفات
+    const listItem = document.createElement('li');
+    listItem.innerHTML = `<i class="fas ${fileName.match(/\.(png|jpg|jpeg|gif|svg|mp4)$/i) ? "fa-image" : "fa-file"} file-icon"></i> ${fileName}`;
+    document.getElementById("fileTree").appendChild(listItem);
+  }
+}
+
+// تحميل محرر مونـاكو
+require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs' } });  
+require(['vs/editor/editor.main'], function () {
+  // استعادة الملفات من localStorage
+  const savedData = localStorage.getItem("savedFiles");
+  if (savedData) {
+    const parsedData = JSON.parse(savedData);
+    for (const [fileName, content] of Object.entries(parsedData)) {
+      filesContent[fileName] = content;
+
+      // عرض الملفات في الشجرة
+      const listItem = document.createElement('li');
+      listItem.innerHTML = `<i class="fas ${fileName.match(/\.(png|jpg|jpeg|gif|svg|mp4)$/i) ? "fa-image" : "fa-file"} file-icon"></i> ${fileName}`;
+      document.getElementById("fileTree").appendChild(listItem);
+    }
+  }
+
+  // استرجاع آخر ملف كان مفتوحًا
+  const lastFile = localStorage.getItem("currentFile");
+const defaultValue = lastFile && filesContent[lastFile]
+  ? filesContent[lastFile]
+  : `<!DOCTYPE html>
+<html>
+  <body>
+    <h1>Hello!</h1>
+    
+  </body>
+</html>`;
+
+  editor = monaco.editor.create(document.getElementById('editor'), {
+    value: defaultValue,
+    language: 'html',
+    theme: 'vs-dark',
+    automaticLayout: true
+  });
+
+  if (lastFile) currentFile = lastFile;
+
+  // حفظ عند التعديل
+  editor.onDidChangeModelContent(() => {
+    filesContent[currentFile] = editor.getValue();
+    localStorage.setItem("savedFiles", JSON.stringify(filesContent));
+  });
+});
+
+  
+
+
+
 
     // حذف الوظائف الخاصة بزر Run
     document.getElementById("runCode").removeEventListener("click", () => {});
@@ -361,6 +414,7 @@
         // حذف المحتوى من الذاكرة
         const fileName = selectedItem.textContent.trim();
         delete filesContent[fileName];
+        localStorage.setItem("savedFiles", JSON.stringify(filesContent));
       }
     });
 
@@ -506,4 +560,5 @@ for (const [fileName, content] of Object.entries(filesContent)) {
     
   </script>  
 </body>  
-</html>
+  </html>
+  
